@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { Movie } from '@/lib/types';
 import { genres as allGenres } from '@/lib/data';
@@ -11,8 +11,10 @@ export default function AdminUploadPage() {
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [thumbnail, setThumbnail] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [duration, setDuration] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -22,6 +24,9 @@ export default function AdminUploadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
+
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   if (!isAuthenticated || !isAdmin) {
     return (
@@ -73,6 +78,53 @@ export default function AdminUploadPage() {
     }
   };
 
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file for thumbnail');
+        return;
+      }
+      setThumbnailFile(file);
+      const url = URL.createObjectURL(file);
+      setThumbnailUrl(url);
+      setError('');
+    }
+  };
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('video/')) {
+        setError('Please select a video file');
+        return;
+      }
+      // Check file size (limit to 500MB for demo)
+      if (file.size > 500 * 1024 * 1024) {
+        setError('Video file is too large. Maximum size is 500MB for demo purposes.');
+        return;
+      }
+      setVideoFile(file);
+      const url = URL.createObjectURL(file);
+      setVideoUrl(url);
+      setError('');
+    }
+  };
+
+  const handleVideoLoaded = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const durationSeconds = video.duration;
+      const hours = Math.floor(durationSeconds / 3600);
+      const minutes = Math.floor((durationSeconds % 3600) / 60);
+      if (hours > 0) {
+        setDuration(`${hours}h ${minutes}m`);
+      } else {
+        setDuration(`${minutes}m`);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -86,16 +138,16 @@ export default function AdminUploadPage() {
       setError('Description is required');
       return;
     }
-    if (!thumbnail.trim()) {
-      setError('Thumbnail URL is required');
+    if (!thumbnailUrl.trim()) {
+      setError('Thumbnail is required');
       return;
     }
     if (!videoUrl.trim()) {
-      setError('Video URL is required');
+      setError('Video is required');
       return;
     }
     if (!duration.trim()) {
-      setError('Duration is required');
+      setError('Duration is required. Please wait for video to load or enter manually.');
       return;
     }
     if (selectedGenres.length === 0) {
@@ -109,7 +161,7 @@ export default function AdminUploadPage() {
       const newMovie: Omit<Movie, 'id'> = {
         title: title.trim(),
         description: description.trim(),
-        thumbnail: thumbnail.trim(),
+        thumbnail: thumbnailUrl.trim(),
         videoUrl: videoUrl.trim(),
         duration: duration.trim(),
         year,
@@ -125,8 +177,10 @@ export default function AdminUploadPage() {
       // Reset form
       setTitle('');
       setDescription('');
-      setThumbnail('');
+      setThumbnailUrl('');
       setVideoUrl('');
+      setThumbnailFile(null);
+      setVideoFile(null);
       setDuration('');
       setYear(new Date().getFullYear());
       setSelectedGenres([]);
@@ -147,6 +201,16 @@ export default function AdminUploadPage() {
       paddingTop: '20px',
       paddingBottom: '40px'
     }}>
+      {/* Hidden video element for duration detection */}
+      {videoUrl && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          onLoadedMetadata={handleVideoLoaded}
+          style={{ display: 'none' }}
+        />
+      )}
+
       {/* Header */}
       <div style={{ padding: '0 20px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -164,7 +228,7 @@ export default function AdminUploadPage() {
           </h1>
         </div>
         <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px', marginLeft: '36px' }}>
-          Add a new movie to NETFY
+          Add a new movie to NETFY from your computer
         </p>
       </div>
 
@@ -195,6 +259,51 @@ export default function AdminUploadPage() {
           {error}
         </div>
       )}
+
+      {/* Upload Mode Toggle */}
+      <div style={{ padding: '0 20px', marginBottom: '16px' }}>
+        <div style={{ 
+          display: 'flex', 
+          background: 'var(--surface)', 
+          borderRadius: '8px',
+          padding: '4px'
+        }}>
+          <button
+            type="button"
+            onClick={() => setUploadMode('file')}
+            style={{
+              flex: 1,
+              padding: '10px',
+              background: uploadMode === 'file' ? '#E50914' : 'transparent',
+              border: 'none',
+              borderRadius: '6px',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            📁 Upload from Device
+          </button>
+          <button
+            type="button"
+            onClick={() => setUploadMode('url')}
+            style={{
+              flex: 1,
+              padding: '10px',
+              background: uploadMode === 'url' ? '#E50914' : 'transparent',
+              border: 'none',
+              borderRadius: '6px',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+          >
+            🔗 Use URL
+          </button>
+        </div>
+      </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} style={{ padding: '0 20px' }}>
@@ -247,50 +356,112 @@ export default function AdminUploadPage() {
             />
           </div>
 
-          {/* Thumbnail URL */}
+          {/* Thumbnail */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
-              Thumbnail URL *
+              Thumbnail Image *
             </label>
-            <input
-              type="url"
-              value={thumbnail}
-              onChange={(e) => setThumbnail(e.target.value)}
-              placeholder="https://example.com/thumbnail.jpg"
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'var(--background)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: 'var(--text-primary)',
-                fontSize: '14px',
-                outline: 'none'
-              }}
-            />
+            {uploadMode === 'file' ? (
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'var(--background)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    color: 'var(--text-primary)',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+                {thumbnailUrl && (
+                  <div style={{ marginTop: '12px' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Preview:</p>
+                    <img 
+                      src={thumbnailUrl} 
+                      alt="Thumbnail preview" 
+                      style={{ 
+                        width: '200px', 
+                        height: '120px', 
+                        objectFit: 'cover',
+                        borderRadius: '8px' 
+                      }} 
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <input
+                type="url"
+                value={thumbnailUrl}
+                onChange={(e) => setThumbnailUrl(e.target.value)}
+                placeholder="https://example.com/thumbnail.jpg"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'var(--background)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
+            )}
           </div>
 
-          {/* Video URL */}
+          {/* Video */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
-              Video URL *
+              Video File *
             </label>
-            <input
-              type="url"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://example.com/video.mp4"
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                background: 'var(--background)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: 'var(--text-primary)',
-                fontSize: '14px',
-                outline: 'none'
-              }}
-            />
+            {uploadMode === 'file' ? (
+              <div>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleVideoChange}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'var(--background)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    color: 'var(--text-primary)',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+                {videoFile && (
+                  <div style={{ marginTop: '12px' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      Selected: {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://example.com/video.mp4"
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'var(--background)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
+            )}
           </div>
 
           {/* Duration and Year */}
@@ -315,6 +486,9 @@ export default function AdminUploadPage() {
                   outline: 'none'
                 }}
               />
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Auto-detected when video is loaded
+              </p>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
@@ -387,8 +561,65 @@ export default function AdminUploadPage() {
             />
           </div>
 
-          {/* Toggles */}
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
+          {/* Access Type */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
+              Access Type
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px', 
+                cursor: 'pointer',
+                padding: '12px',
+                background: !isPremium ? 'rgba(229, 9, 20, 0.1)' : 'var(--background)',
+                border: `1px solid ${!isPremium ? '#E50914' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '8px'
+              }}>
+                <input
+                  type="radio"
+                  name="accessType"
+                  checked={!isPremium}
+                  onChange={() => setIsPremium(false)}
+                  style={{ accentColor: '#E50914', width: '18px', height: '18px' }}
+                />
+                <div>
+                  <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>Free</span>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Available to all users without subscription
+                  </p>
+                </div>
+              </label>
+              <label style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px', 
+                cursor: 'pointer',
+                padding: '12px',
+                background: isPremium ? 'rgba(229, 9, 20, 0.1)' : 'var(--background)',
+                border: `1px solid ${isPremium ? '#E50914' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: '8px'
+              }}>
+                <input
+                  type="radio"
+                  name="accessType"
+                  checked={isPremium}
+                  onChange={() => setIsPremium(true)}
+                  style={{ accentColor: '#E50914', width: '18px', height: '18px' }}
+                />
+                <div>
+                  <span style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>Premium Only</span>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    Requires subscription (UGX 10,000/week or UGX 30,000/month)
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* New Release Toggle */}
+          <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
@@ -396,16 +627,7 @@ export default function AdminUploadPage() {
                 onChange={(e) => setIsNew(e.target.checked)}
                 style={{ accentColor: '#E50914', width: '18px', height: '18px' }}
               />
-              <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>Mark as New</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={isPremium}
-                onChange={(e) => setIsPremium(e.target.checked)}
-                style={{ accentColor: '#E50914', width: '18px', height: '18px' }}
-              />
-              <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>Premium Only</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>Mark as New Release</span>
             </label>
           </div>
 
