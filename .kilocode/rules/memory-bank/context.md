@@ -23,6 +23,7 @@ NETFY MOVIES is a fully functional movie streaming app built with Next.js 16, Ty
 - [x] Content downloading feature
 - [x] Professional and attractive home page design
 - [x] Admin movie upload feature - admin can now upload new movies via /admin/upload
+- [x] Enhanced admin upload - upload movies from local drive (gallery/hard disk)
 
 ## Current Structure
 
