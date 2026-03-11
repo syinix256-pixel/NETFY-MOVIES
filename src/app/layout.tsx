@@ -1,20 +1,18 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { AppProvider } from "@/lib/AppContext";
+import Header from "@/components/Header";
+import BottomNavigation from "@/components/BottomNavigation";
 
 export const metadata: Metadata = {
-  title: "Next.js Template",
-  description: "A minimal Next.js starter template",
+  title: "NETFY MOVIES - Stream Movies Online",
+  description: "Watch unlimited movies and TV shows. Stream online or download for offline viewing.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -24,10 +22,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body>
+        <AppProvider>
+          <Header />
+          <main style={{ 
+            minHeight: '100vh',
+            paddingTop: '80px',
+            paddingBottom: 'calc(80px + env(safe-area-inset-bottom))'
+          }}>
+            {children}
+          </main>
+          <BottomNavigation />
+        </AppProvider>
       </body>
     </html>
   );

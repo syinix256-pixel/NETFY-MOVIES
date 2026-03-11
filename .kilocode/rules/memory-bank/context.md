@@ -1,87 +1,66 @@
-# Active Context: Next.js Starter Template
+# Active Context: NETFY MOVIES App
 
 ## Current State
 
-**Template Status**: ✅ Ready for development
+**App Status**: ✅ Complete and ready for use
 
-The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. It's ready for AI-assisted expansion to build any type of application.
+NETFY MOVIES is a fully functional movie streaming app built with Next.js 16, TypeScript, and Tailwind CSS 4.
 
 ## Recently Completed
 
-- [x] Base Next.js 16 setup with App Router
-- [x] TypeScript configuration with strict mode
-- [x] Tailwind CSS 4 integration
-- [x] ESLint configuration
-- [x] Memory bank documentation
-- [x] Recipe system for common features
+- [x] Complete movie streaming app "NETFY MOVIES"
+- [x] BottomNavigationBar for mobile viewports (Home, Browse, Watchlist, Downloads)
+- [x] Safe Area padding using env(safe-area-inset-top/bottom)
+- [x] Disabled text selection on buttons and navigation (user-select: none)
+- [x] Settings page with Delete Account feature and confirmation dialog
+- [x] Added overscroll-behavior-y: none to prevent browser bounce
+- [x] Dark mode follows system settings via media query listener
+- [x] Mobile Drawer/Bottom Sheet for genre Select component
+- [x] Authentication system with admin and user login
+- [x] Subscription plans (UGX 10,000 weekly, UGX 30,000 monthly)
+- [x] Pay Per View option (UGX 500 per movie)
+- [x] Mobile money payment integration (0775648886, 0707538010)
+- [x] Content downloading feature
+- [x] Professional and attractive home page design
 
 ## Current Structure
 
 | File/Directory | Purpose | Status |
 |----------------|---------|--------|
-| `src/app/page.tsx` | Home page | ✅ Ready |
-| `src/app/layout.tsx` | Root layout | ✅ Ready |
-| `src/app/globals.css` | Global styles | ✅ Ready |
-| `.kilocode/` | AI context & recipes | ✅ Ready |
+| `src/app/page.tsx` | Home page with hero section, trending, popular | ✅ Complete |
+| `src/app/login/page.tsx` | Login page with credentials | ✅ Complete |
+| `src/app/browse/page.tsx` | Browse movies with genre filter | ✅ Complete |
+| `src/app/watchlist/page.tsx` | User watchlist | ✅ Complete |
+| `src/app/downloads/page.tsx` | Downloaded movies | ✅ Complete |
+| `src/app/settings/page.tsx` | Settings with delete account | ✅ Complete |
+| `src/app/subscription/page.tsx` | Premium subscription plans | ✅ Complete |
+| `src/app/movie/[id]/page.tsx` | Movie detail with pay-per-view | ✅ Complete |
+| `src/app/admin/page.tsx` | Admin dashboard | ✅ Complete |
+| `src/components/BottomNavigation.tsx` | Mobile bottom nav | ✅ Complete |
+| `src/components/Header.tsx` | Header with nav | ✅ Complete |
+| `src/components/MovieCard.tsx` | Movie card component | ✅ Complete |
+| `src/components/MobileSelect.tsx` | Mobile bottom sheet select | ✅ Complete |
+| `src/lib/AppContext.tsx` | App state and auth context | ✅ Complete |
+| `src/lib/data.ts` | Movie data | ✅ Complete |
+| `src/lib/types.ts` | TypeScript types | ✅ Complete |
+| `src/app/globals.css` | Global styles with mobile optimizations | ✅ Complete |
 
-## Current Focus
+## Login Credentials
 
-The template is ready. Next steps depend on user requirements:
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | basemera | Basemeraadmin |
+| User | gilbert | Gilbertadmin |
 
-1. What type of application to build
-2. What features are needed
-3. Design/branding preferences
+## Pricing
 
-## Quick Start Guide
-
-### To add a new page:
-
-Create a file at `src/app/[route]/page.tsx`:
-```tsx
-export default function NewPage() {
-  return <div>New page content</div>;
-}
-```
-
-### To add components:
-
-Create `src/components/` directory and add components:
-```tsx
-// src/components/ui/Button.tsx
-export function Button({ children }: { children: React.ReactNode }) {
-  return <button className="px-4 py-2 bg-blue-600 text-white rounded">{children}</button>;
-}
-```
-
-### To add a database:
-
-Follow `.kilocode/recipes/add-database.md`
-
-### To add API routes:
-
-Create `src/app/api/[route]/route.ts`:
-```tsx
-import { NextResponse } from "next/server";
-
-export async function GET() {
-  return NextResponse.json({ message: "Hello" });
-}
-```
-
-## Available Recipes
-
-| Recipe | File | Use Case |
-|--------|------|----------|
-| Add Database | `.kilocode/recipes/add-database.md` | Data persistence with Drizzle + SQLite |
-
-## Pending Improvements
-
-- [ ] Add more recipes (auth, email, etc.)
-- [ ] Add example components
-- [ ] Add testing setup recipe
+- Weekly Subscription: UGX 10,000
+- Monthly Subscription: UGX 30,000
+- Pay Per View: UGX 500 per movie
+- Mobile Money: 0775648886, 0707538010
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
-| Initial | Template created with base setup |
+| Initial | NETFY MOVIES app created with all features |
