@@ -89,12 +89,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { initialDarkMode, initialUser, initialDownloads };
   };
 
-  const initialState = typeof window !== 'undefined' ? getInitialState() : { initialDarkMode: true, initialUser: null, initialDownloads: [] };
+  const initialState = { initialDarkMode: true, initialUser: null, initialDownloads: [] };
   
   const [user, setUser] = useState<User | null>(initialState.initialUser);
   const [isDarkMode, setIsDarkMode] = useState(initialState.initialDarkMode);
   const [downloads, setDownloads] = useState<string[]>(initialState.initialDownloads);
   const [movies, setMovies] = useState<Movie[]>(initialMovies);
+  const [hasHydrated, setHasHydrated] = useState(false);
   const mountedRef = useRef(false);
 
   const applyDarkMode = (dark: boolean) => {
@@ -110,8 +111,63 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     mountedRef.current = true;
     
-    // Apply initial dark mode
-    applyDarkMode(isDarkMode);
+    let darkModeValue = true;
+    
+    // Load saved data from localStorage
+    try {
+      // Load dark mode
+      const storedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+      if (storedDarkMode !== null) {
+        darkModeValue = JSON.parse(storedDarkMode);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsDarkMode(darkModeValue);
+      } else {
+        darkModeValue = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsDarkMode(darkModeValue);
+      }
+
+      // Load user
+      const storedUser = localStorage.getItem(STORAGE_KEY);
+      if (storedUser) {
+        try {
+          let parsed = JSON.parse(storedUser);
+          // Check if subscription has expired
+          if (parsed.subscriptionExpiry) {
+            const expiryDate = new Date(parsed.subscriptionExpiry);
+            const now = new Date();
+            if (expiryDate <= now) {
+              // Subscription expired, update user
+              parsed.isPremium = false;
+              parsed.subscriptionType = undefined;
+              parsed.subscriptionExpiry = undefined;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+            }
+          }
+          setUser(parsed);
+        } catch (e) {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      // Load downloads
+      const storedDownloads = localStorage.getItem(DOWNLOADS_KEY);
+      if (storedDownloads) {
+        try {
+          setDownloads(JSON.parse(storedDownloads));
+        } catch (e) {
+          localStorage.removeItem(DOWNLOADS_KEY);
+        }
+      }
+    } catch (e) {
+      // Handle any errors gracefully
+    }
+    
+    // Apply initial dark mode with the calculated value
+    applyDarkMode(darkModeValue);
+    
+    // Mark as hydrated after loading data
+    setHasHydrated(true);
 
     // Listen for system preference changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -125,7 +181,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [isDarkMode]);
+  }, []);
 
   // Persist user
   useEffect(() => {
@@ -336,6 +392,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const newMovie: Movie = { ...movie, id: newId };
     setMovies(prev => [newMovie, ...prev]);
   };
+
+  // Don't render children until hydrated to prevent hydration mismatch
+  if (!hasHydrated) {
+    return (
+      <AppContext.Provider
+        value={{
+          user: null,
+          isAuthenticated: false,
+          isAdmin: false,
+          isDarkMode: true,
+          login: () => false,
+          register: () => false,
+          logout: () => {},
+          addToWatchlist: () => {},
+          removeFromWatchlist: () => {},
+          addToPurchased: () => {},
+          purchaseSubscription: () => {},
+          deleteAccount: () => {},
+          watchlist: [],
+          purchasedMovies: [],
+          downloads: [],
+          addToDownloads: () => {},
+          removeFromDownloads: () => {},
+          movies: initialMovies,
+          addMovie: () => {}
+        }}
+      >
+        {children}
+      </AppContext.Provider>
+    );
+  }
 
   return (
     <AppContext.Provider
