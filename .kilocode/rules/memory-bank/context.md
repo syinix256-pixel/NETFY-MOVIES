@@ -24,13 +24,16 @@ NETFY MOVIES is a fully functional movie streaming app built with Next.js 16, Ty
 - [x] Professional and attractive home page design
 - [x] Admin movie upload feature - admin can now upload new movies via /admin/upload
 - [x] Enhanced admin upload - upload movies from local drive (gallery/hard disk)
+- [x] Registration page with email or telephone number
+- [x] Auto subscription expiry check - premium deactivates automatically when subscription expires
 
 ## Current Structure
 
 | File/Directory | Purpose | Status |
 |----------------|---------|--------|
 | `src/app/page.tsx` | Home page with hero section, trending, popular | ✅ Complete |
-| `src/app/login/page.tsx` | Login page with credentials | ✅ Complete |
+| `src/app/login/page.tsx` | Login page with email/phone support | ✅ Complete |
+| `src/app/register/page.tsx` | Registration with email/telephone | ✅ New |
 | `src/app/browse/page.tsx` | Browse movies with genre filter | ✅ Complete |
 | `src/app/watchlist/page.tsx` | User watchlist | ✅ Complete |
 | `src/app/downloads/page.tsx` | Downloaded movies | ✅ Complete |
@@ -38,15 +41,14 @@ NETFY MOVIES is a fully functional movie streaming app built with Next.js 16, Ty
 | `src/app/subscription/page.tsx` | Premium subscription plans | ✅ Complete |
 | `src/app/movie/[id]/page.tsx` | Movie detail with pay-per-view | ✅ Complete |
 | `src/app/admin/page.tsx` | Admin dashboard | ✅ Complete |
-| `src/app/admin/upload/page.tsx` | Admin movie upload form | ✅ New |
+| `src/app/admin/upload/page.tsx` | Admin movie upload form | ✅ Complete |
 | `src/components/BottomNavigation.tsx` | Mobile bottom nav | ✅ Complete |
 | `src/components/Header.tsx` | Header with nav | ✅ Complete |
 | `src/components/MovieCard.tsx` | Movie card component | ✅ Complete |
 | `src/components/MobileSelect.tsx` | Mobile bottom sheet select | ✅ Complete |
 | `src/lib/AppContext.tsx` | App state, auth, movies management | ✅ Updated |
 | `src/lib/data.ts` | Movie data | ✅ Complete |
-| `src/lib/types.ts` | TypeScript types | ✅ Complete |
-| `src/app/globals.css` | Global styles with mobile optimizations | ✅ Complete |
+| `src/lib/types.ts` | TypeScript types | ✅ Updated |
 
 ## Login Credentials
 
@@ -54,6 +56,7 @@ NETFY MOVIES is a fully functional movie streaming app built with Next.js 16, Ty
 |------|----------|----------|
 | Admin | basemera | Basemeraadmin |
 | User | gilbert | Gilbertadmin |
+| New Users | Register with email or phone | Your chosen password |
 
 ## Pricing
 
@@ -68,3 +71,4 @@ NETFY MOVIES is a fully functional movie streaming app built with Next.js 16, Ty
 |------|---------|
 | Initial | NETFY MOVIES app created with all features |
 | Today | Added admin movie upload feature at /admin/upload |
+| Today | Added registration with email/telephone, auto subscription expiry check |
