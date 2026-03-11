@@ -11,7 +11,8 @@ interface AppContextType {
   isAdmin: boolean;
   isDarkMode: boolean;
   movies: Movie[];
-  login: (username: string, password: string) => boolean;
+  login: (identifier: string, password: string) => boolean;
+  register: (identifier: string, password: string, type: 'email' | 'phone') => boolean;
   logout: () => void;
   addToWatchlist: (movieId: string) => void;
   removeFromWatchlist: (movieId: string) => void;
@@ -31,11 +32,68 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_KEY = 'netfy_user';
 const DARK_MODE_KEY = 'netfy_dark_mode';
 const DOWNLOADS_KEY = 'netfy_downloads';
+const REGISTERED_USERS_KEY = 'netfy_registered_users';
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [downloads, setDownloads] = useState<string[]>([]);
+  // Initialize state from localStorage - this runs once on mount
+  const getInitialState = () => {
+    let initialDarkMode = true;
+    let initialUser: User | null = null;
+    let initialDownloads: string[] = [];
+    
+    try {
+      // Load dark mode
+      const storedDarkMode = localStorage.getItem(DARK_MODE_KEY);
+      if (storedDarkMode !== null) {
+        initialDarkMode = JSON.parse(storedDarkMode);
+      } else if (typeof window !== 'undefined') {
+        initialDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+
+      // Load user
+      const storedUser = localStorage.getItem(STORAGE_KEY);
+      if (storedUser) {
+        try {
+          let parsed = JSON.parse(storedUser);
+          // Check if subscription has expired
+          if (parsed.subscriptionExpiry) {
+            const expiryDate = new Date(parsed.subscriptionExpiry);
+            const now = new Date();
+            if (expiryDate <= now) {
+              // Subscription expired, update user
+              parsed.isPremium = false;
+              parsed.subscriptionType = undefined;
+              parsed.subscriptionExpiry = undefined;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+            }
+          }
+          initialUser = parsed;
+        } catch (e) {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      // Load downloads
+      const storedDownloads = localStorage.getItem(DOWNLOADS_KEY);
+      if (storedDownloads) {
+        try {
+          initialDownloads = JSON.parse(storedDownloads);
+        } catch (e) {
+          localStorage.removeItem(DOWNLOADS_KEY);
+        }
+      }
+    } catch (e) {
+      // Handle any errors gracefully
+    }
+    
+    return { initialDarkMode, initialUser, initialDownloads };
+  };
+
+  const initialState = typeof window !== 'undefined' ? getInitialState() : { initialDarkMode: true, initialUser: null, initialDownloads: [] };
+  
+  const [user, setUser] = useState<User | null>(initialState.initialUser);
+  const [isDarkMode, setIsDarkMode] = useState(initialState.initialDarkMode);
+  const [downloads, setDownloads] = useState<string[]>(initialState.initialDownloads);
   const [movies, setMovies] = useState<Movie[]>(initialMovies);
   const mountedRef = useRef(false);
 
@@ -52,57 +110,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     mountedRef.current = true;
     
-    // Load dark mode preference
-    try {
-      const storedDarkMode = localStorage.getItem(DARK_MODE_KEY);
-      if (storedDarkMode !== null) {
-        const parsed = JSON.parse(storedDarkMode);
-        setIsDarkMode(parsed);
-        // Apply immediately
-        applyDarkMode(parsed);
-      } else {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setIsDarkMode(prefersDark);
-        applyDarkMode(prefersDark);
-      }
-
-      // Load user
-      const storedUser = localStorage.getItem(STORAGE_KEY);
-      if (storedUser) {
-        try {
-          const parsed = JSON.parse(storedUser);
-          setUser(parsed);
-        } catch (e) {
-          localStorage.removeItem(STORAGE_KEY);
-        }
-      }
-
-      // Load downloads
-      const storedDownloads = localStorage.getItem(DOWNLOADS_KEY);
-      if (storedDownloads) {
-        try {
-          const parsed = JSON.parse(storedDownloads);
-          setDownloads(parsed);
-        } catch (e) {
-          localStorage.removeItem(DOWNLOADS_KEY);
-        }
-      }
-    } catch (e) {
-      // Handle any errors gracefully
-    }
+    // Apply initial dark mode
+    applyDarkMode(isDarkMode);
 
     // Listen for system preference changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
       const stored = localStorage.getItem(DARK_MODE_KEY);
       if (stored === null) {
-        setIsDarkMode(e.matches);
-        applyDarkMode(e.matches);
+        const newDarkMode = e.matches;
+        setIsDarkMode(newDarkMode);
+        applyDarkMode(newDarkMode);
       }
     };
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [isDarkMode]);
 
   // Persist user
   useEffect(() => {
@@ -127,12 +150,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [downloads]);
 
-  const login = (username: string, password: string): boolean => {
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+  const login = (identifier: string, password: string): boolean => {
+    // Check for admin login (username only for admin)
+    if (identifier === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
       const adminUser: User = {
         id: 'admin-1',
         username: ADMIN_CREDENTIALS.username,
         password: ADMIN_CREDENTIALS.password,
+        email: 'admin@netfy.com',
+        phone: undefined,
         role: 'admin',
         isPremium: true,
         watchlist: [],
@@ -144,7 +170,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
-    if (username === USER_CREDENTIALS.username && password === USER_CREDENTIALS.password) {
+    // Check registered users (email or phone)
+    try {
+      const storedUsers = localStorage.getItem(REGISTERED_USERS_KEY);
+      if (storedUsers) {
+        const users: User[] = JSON.parse(storedUsers);
+        const foundUser = users.find(u => 
+          (u.email === identifier || u.phone === identifier) && u.password === password
+        );
+        
+        if (foundUser) {
+          // Check if subscription has expired
+          let userToLogin = { ...foundUser };
+          if (foundUser.subscriptionExpiry) {
+            const expiryDate = new Date(foundUser.subscriptionExpiry);
+            const now = new Date();
+            if (expiryDate <= now) {
+              // Subscription expired, update user
+              userToLogin.isPremium = false;
+              userToLogin.subscriptionType = undefined;
+              userToLogin.subscriptionExpiry = undefined;
+              
+              // Update in storage
+              const updatedUsers = users.map(u => 
+                u.id === foundUser.id ? userToLogin : u
+              );
+              localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updatedUsers));
+            }
+          }
+          setUser(userToLogin);
+          return true;
+        }
+      }
+    } catch (e) {
+      // Handle error
+    }
+
+    // Legacy user check (fallback)
+    if (identifier === USER_CREDENTIALS.username && password === USER_CREDENTIALS.password) {
       const regularUser: User = {
         id: 'user-1',
         username: USER_CREDENTIALS.username,
@@ -161,6 +224,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     return false;
+  };
+
+  const register = (identifier: string, password: string, type: 'email' | 'phone'): boolean => {
+    try {
+      const storedUsers = localStorage.getItem(REGISTERED_USERS_KEY);
+      let users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
+
+      // Check if user already exists
+      const exists = users.some(u => 
+        (type === 'email' && u.email === identifier) || 
+        (type === 'phone' && u.phone === identifier)
+      );
+
+      if (exists) {
+        return false;
+      }
+
+      // Create new user
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        username: identifier.split('@')[0] || identifier,
+        password,
+        email: type === 'email' ? identifier : undefined,
+        phone: type === 'phone' ? identifier : undefined,
+        role: 'user',
+        isPremium: false,
+        watchlist: [],
+        watchHistory: [],
+        purchasedMovies: [],
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(newUser);
+      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+      
+      // Auto-login after registration
+      setUser(newUser);
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   const logout = () => {
@@ -241,6 +345,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         isAdmin: user?.role === 'admin',
         isDarkMode,
         login,
+        register,
         logout,
         addToWatchlist,
         removeFromWatchlist,

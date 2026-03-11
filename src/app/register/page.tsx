@@ -5,27 +5,50 @@ import { useRouter } from 'next/navigation';
 import { useApp } from '@/lib/AppContext';
 import Link from 'next/link';
 
-export default function LoginPage() {
-  const [identifier, setIdentifier] = useState(''); // Can be username, email, or phone
+export default function RegisterPage() {
+  const [identifier, setIdentifier] = useState(''); // Can be email or telephone
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useApp();
+  const { register } = useApp();
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!identifier || !password) {
-      setError('Please enter your email/phone and password');
+    if (!identifier || !password || !confirmPassword) {
+      setError('Please fill in all fields');
       return;
     }
 
-    const success = login(identifier, password);
+    // Validate email or telephone
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^(\+256|256|0)[7-9]\d{8}$/;
+    
+    const isEmail = emailRegex.test(identifier);
+    const isPhone = phoneRegex.test(identifier.replace(/\s/g, ''));
+    
+    if (!isEmail && !isPhone) {
+      setError('Please enter a valid email or telephone number (e.g., 0771234567)');
+      return;
+    }
+
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    const success = register(identifier, password, isEmail ? 'email' : 'phone');
     if (success) {
       router.push('/');
     } else {
-      setError('Invalid email, phone number, or password');
+      setError('An account with this information already exists');
     }
   };
 
@@ -54,11 +77,11 @@ export default function LoginPage() {
             NETFY<span style={{ color: 'var(--text-primary)' }}>MOVIES</span>
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-            Sign in to your account
+            Create your account
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Register Form */}
         <form onSubmit={handleSubmit} style={{
           background: 'var(--surface)',
           padding: '32px',
@@ -98,9 +121,12 @@ export default function LoginPage() {
               placeholder="email@example.com or 0771234567"
               style={{ userSelect: 'text' }}
             />
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+              Enter your email (e.g., john@example.com) or phone (e.g., 0771234567)
+            </p>
           </div>
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
               fontSize: '14px',
@@ -115,7 +141,27 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input-field no-select"
-              placeholder="Enter password"
+              placeholder="Create a password"
+              style={{ userSelect: 'text' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: 'var(--text-primary)',
+              marginBottom: '8px'
+            }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="input-field no-select"
+              placeholder="Confirm your password"
               style={{ userSelect: 'text' }}
             />
           </div>
@@ -136,33 +182,16 @@ export default function LoginPage() {
               transition: 'background 0.2s, transform 0.2s'
             }}
           >
-            Sign In
+            Create Account
           </button>
         </form>
 
-        {/* Demo Credentials */}
-        <div style={{
-          marginTop: '24px',
-          padding: '20px',
-          background: 'var(--surface)',
-          borderRadius: '12px',
-          textAlign: 'center'
-        }}>
-          <h3 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
-            Demo Credentials
-          </h3>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-            <p><strong style={{ color: '#E50914' }}>Admin:</strong> basemera / Basemeraadmin</p>
-            <p><strong style={{ color: '#46D369' }}>Or Register:</strong> Create a new account</p>
-          </div>
-        </div>
-
-        {/* Register Link */}
+        {/* Login Link */}
         <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-            Don&apos;t have an account?{' '}
+            Already have an account?{' '}
             <Link 
-              href="/register"
+              href="/login"
               className="no-select"
               style={{
                 color: '#E50914',
@@ -170,13 +199,13 @@ export default function LoginPage() {
                 fontWeight: '600'
               }}
             >
-              Create Account
+              Sign In
             </Link>
           </p>
         </div>
 
         {/* Back to Home */}
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
           <Link 
             href="/"
             className="no-select"
