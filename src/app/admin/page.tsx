@@ -2,10 +2,9 @@
 
 import { useApp } from '@/lib/AppContext';
 import Link from 'next/link';
-import { movies } from '@/lib/data';
 
 export default function AdminPage() {
-  const { user, isAuthenticated, isAdmin } = useApp();
+  const { user, isAuthenticated, isAdmin, movies } = useApp();
 
   if (!isAuthenticated || !isAdmin) {
     return (
@@ -113,6 +112,9 @@ export default function AdminPage() {
         <div style={{ background: 'var(--surface)', borderRadius: '12px', overflow: 'hidden' }}>
           <Link href="/browse" style={{ display: 'block', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none' }}>
             <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>📽️ Manage Movies</p>
+          </Link>
+          <Link href="/admin/upload" style={{ display: 'block', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none' }}>
+            <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>➕ Upload Movie</p>
           </Link>
           <Link href="/subscription" style={{ display: 'block', padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', textDecoration: 'none' }}>
             <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>💰 Subscription Plans</p>

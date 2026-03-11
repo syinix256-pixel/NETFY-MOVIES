@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { movies, genres } from '@/lib/data';
+import { useApp } from '@/lib/AppContext';
+import { genres } from '@/lib/data';
 import MovieCard from '@/components/MovieCard';
 import MobileSelect from '@/components/MobileSelect';
 
 export default function BrowsePage() {
+  const { movies } = useApp();
   const [selectedGenre, setSelectedGenre] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,7 +31,7 @@ export default function BrowsePage() {
     }
     
     return filtered;
-  }, [selectedGenre, searchQuery]);
+  }, [movies, selectedGenre, searchQuery]);
 
   return (
     <div style={{ 

@@ -1,14 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import { User } from './types';
+import { User, Movie } from './types';
 import { ADMIN_CREDENTIALS, USER_CREDENTIALS } from './types';
+import { movies as initialMovies } from './data';
 
 interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isDarkMode: boolean;
+  movies: Movie[];
   login: (username: string, password: string) => boolean;
   logout: () => void;
   addToWatchlist: (movieId: string) => void;
@@ -21,6 +23,7 @@ interface AppContextType {
   downloads: string[];
   addToDownloads: (movieId: string) => void;
   removeFromDownloads: (movieId: string) => void;
+  addMovie: (movie: Omit<Movie, 'id'>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -33,6 +36,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [downloads, setDownloads] = useState<string[]>([]);
+  const [movies, setMovies] = useState<Movie[]>(initialMovies);
   const mountedRef = useRef(false);
 
   const applyDarkMode = (dark: boolean) => {
@@ -223,6 +227,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDownloads(downloads.filter(id => id !== movieId));
   };
 
+  const addMovie = (movie: Omit<Movie, 'id'>) => {
+    const newId = `movie-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newMovie: Movie = { ...movie, id: newId };
+    setMovies(prev => [newMovie, ...prev]);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -241,7 +251,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         purchasedMovies: user?.purchasedMovies || [],
         downloads,
         addToDownloads,
-        removeFromDownloads
+        removeFromDownloads,
+        movies,
+        addMovie
       }}
     >
       {children}

@@ -1,12 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { movies } from '@/lib/data';
 import { useApp } from '@/lib/AppContext';
 import Link from 'next/link';
 
 export default function DownloadsPage() {
-  const { downloads, addToDownloads, removeFromDownloads, isAuthenticated } = useApp();
+  const { downloads, addToDownloads, removeFromDownloads, isAuthenticated, movies } = useApp();
   const [downloading, setDownloading] = useState<string[]>([]);
 
   const downloadedMovies = movies.filter(m => downloads.includes(m.id));

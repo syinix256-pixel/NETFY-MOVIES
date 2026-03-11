@@ -1,12 +1,11 @@
 'use client';
 
-import { movies } from '@/lib/data';
-import MovieCard from '@/components/MovieCard';
 import { useApp } from '@/lib/AppContext';
+import MovieCard from '@/components/MovieCard';
 import Link from 'next/link';
 
 export default function WatchlistPage() {
-  const { watchlist, isAuthenticated } = useApp();
+  const { watchlist, isAuthenticated, movies } = useApp();
 
   const watchlistMovies = movies.filter(m => watchlist.includes(m.id));
 

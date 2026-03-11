@@ -2,13 +2,13 @@
 
 import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { movies } from '@/lib/data';
 import { useApp } from '@/lib/AppContext';
 import { PAY_PER_VIEW_PRICE, MOBILE_MONEY_NUMBERS } from '@/lib/types';
 import Link from 'next/link';
 
 export default function MoviePage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
+  const { movies } = useApp();
   const movie = movies.find(m => m.id === resolvedParams.id);
   const router = useRouter();
   const { isAuthenticated, user, addToWatchlist, removeFromWatchlist, watchlist, addToPurchased, addToDownloads } = useApp();

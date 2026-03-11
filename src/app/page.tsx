@@ -1,12 +1,15 @@
 'use client';
 
-import { movies, trendingMovies, popularMovies, freeMovies } from '@/lib/data';
 import MovieCard from '@/components/MovieCard';
 import { useApp } from '@/lib/AppContext';
 import Link from 'next/link';
 
 export default function Home() {
-  const { isAuthenticated, user } = useApp();
+  const { isAuthenticated, user, movies } = useApp();
+
+  const trendingMovies = movies.filter(m => m.isNew).slice(0, 5);
+  const popularMovies = movies.filter(m => m.rating >= 4.5).slice(0, 6);
+  const freeMovies = movies.filter(m => !m.isPremium);
 
   return (
     <div style={{ background: 'var(--background)', minHeight: '100vh' }}>
